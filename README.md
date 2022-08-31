@@ -4,6 +4,7 @@ A CI/CD checker and CLI tool for alphabetising, formatting and checking for malf
 
 ## Requirements
 - Python 3.4+ Installed in the environment you wish to run this, whether local or virtual.
-- In addition to python the [lxml|https://lxml.de/installation.html] package is required
+- In addition to python the [lxm](https://lxml.de/installation.html) package is required
+``pip install lxml``
 
 
