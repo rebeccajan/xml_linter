@@ -9,7 +9,6 @@ Date: 2022-08
 import argparse
 import os
 from lxml import etree
-DEFAULT_ANCHOR = "'}'"
 
 
 def sort_xml(xml_doc, anchor_tag):
@@ -177,8 +176,8 @@ def lint_xml(lint_target, lint_option, lint_anchor):
 
 if __name__ == "__main__":
     DEFAULT_PATH = os.getcwd()
+    DEFAULT_ANCHOR = "'}'"
     LINT_TYPE = ''
-    LINT_ANCHOR = ''
     parser = argparse.ArgumentParser(prog='XML Linter')
     parser.add_argument('-a', '--anchor', type=str,
                         help='Specify a tag name to not perform sorting on', default=DEFAULT_ANCHOR)
@@ -187,7 +186,6 @@ if __name__ == "__main__":
     parser.add_argument('-w', '--write', dest='write', type=str, nargs='?', const=DEFAULT_PATH,
                         help='Specify a file or directory path to perform a lint write')
     options = parser.parse_args()
-    print(options)
     if options.write is None and options.check is not None:
         LINT_TYPE = 'check'
         parse_xml(options.check, LINT_TYPE, options.anchor)
