@@ -1,22 +1,23 @@
 # XML Linter
 This tool has a GNU GPLv3 license, please read for information regarding permissions, conditions and limitations of using this software.
 
-This XML linter sorts XML documents alphabetically by tag, whilst respecting parent-child hierarchy and retaining the position of namespace tags in the tree.
+This linter requires Python 3.4+, it is untested on older versions.
+The linter sorts XML documents alphabetically by tag attribute, whilst respecting parent-child hierarchy and retaining the position of namespace tags in the tree.
 
-### Requirements
-- Python 3.4+ Installed in the environment you wish to run this, whether local or virtual.
-- In addition to Python the [lxml](https://lxml.de/installation.html) package is required
-```
-pip install lxml
-```
+## Installing Dependencies
+- Checkout this repo ```git checkout -- https://github.com/rebeccajan/xml_linter.git```
+-  Navigate to the repo folder via CLI and run <br/>
+For Windows: ```pip install -r requirements.txt``` <br/>
+For Mac: ```pip3 install -r requirements.txt```
 
-## Linter Arguments
+### Optional Arguments
 
-| Flag     | Name  | Description |
-| -------- | ----- | ----------- |
-| -c       | check | Expects a file or directory path to perform a check for sorting and outputs any unsorted documents and/or XML syntax errors to terminal |
-| -w       | write | Expects a file or directory path to format and outputs any linted documents and/or XML syntax errors to terminal |
-| -h       | help  | Display information about the optional arguments |
+| Flag | Name  | Description |
+| ---- | ----- | ----------- |
+| -a   | anchor| Expects the tag value you wish to retain position <br/> eg. `<fullName>` would be executed as ```python xml_linter -a fullName``` |
+| -c   | check | Expects a file or directory path to perform a check for sorting and outputs any unsorted documents and/or XML syntax errors to terminal |
+| -w   | write | Expects a file or directory path to format and outputs any linted documents and/or XML syntax errors to terminal |
+| -h   | help  | Display information about the optional arguments |
 
 
 
