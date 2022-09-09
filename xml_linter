@@ -9,26 +9,28 @@ Date: 2022-08
 import argparse
 import os
 from lxml import etree
+DEFAULT_ANCHOR = "'}'"
 
 
-def sort_xml(xml_doc):
+def sort_xml(xml_doc, anchor_tag):
     """
     Helper function to sort xml
     Args:
         xml_doc (elementTree): the unlinted version of the file
+        anchor_tag (string): the tag to not perform sorting on
     Returns:
-        xml_doc (objects): the linted version of the file
+        xml_doc (elementTree): the linted version of the file
     """
     # handle known type error for .xml's containing '<!--'
     known_error = "'<' not supported between instances of 'cython_function_or_method' and 'str'"
     # get namespace from doc
     name_space = xml_doc.nsmap
-    # split out namespace tag tag so position is retained
+    # split out anchor tags so position is retained
     for parent in xml_doc.xpath('//*[./*]'):
         to_sort = (e for e in parent if e.tag !=
-                   '{'+name_space[None]+'}')
+                   '{'+name_space[None]+anchor_tag)
         non_sort = (e for e in parent if e.tag ==
-                    '{'+name_space[None]+'}')
+                    '{'+name_space[None]+anchor_tag)
         while True:
             try:
                 # sort rest of doc
@@ -59,7 +61,7 @@ def print_log(lint_log, error_log, lint_option):
     """
     Helper function to print logs of linted files and errors found if not empty
     Args:
-        lint_log (list): a list of files that require linting/been linted
+        lint_log (list): a list of files that require linting
         error_log (list): a list of XMLSyntaxError's identified
         lint_option (string): parameter whether write or check was performed
     """
@@ -74,7 +76,13 @@ def print_log(lint_log, error_log, lint_option):
     if error_log:
         exception_log += 'The following file(s) have XMLSyntaxError(s): ' + ", ".join(
             error_log)
-    print(exception_log)
+    if exception_log:
+        if lint_option == 'write':
+            print(exception_log)
+        else:
+            raise Exception(exception_log)
+    else:
+        print('No linting errors found.')
 
 
 def write_xml(linted_doc, file_name):
@@ -89,84 +97,100 @@ def write_xml(linted_doc, file_name):
                      doctype='<?xml version="1.0" encoding="UTF-8"?>')
 
 
-def lint_path(to_lint, lint_option):
+def parse_xml(to_lint, lint_option, to_anchor):
     """
     Function to lint xmls found in path and output log of linted files
     and any XMLSyntaxErrors found
     Args:
-        to_lint (string) : the file or directory to lint,
+        to_lint (string) : the file or directory to lint
         lint_option (string): parameter to specify write or check
+        to_anchor (string): tag name that should not be sorted
     """
     linted_log = []
     error_log = []
-    for subdir, dirs, files in os.walk(to_lint):
-        for file in files:
-            name_of_file = subdir + os.sep + file
-            if name_of_file.endswith(".xml"):
-                data = open(name_of_file, 'rb').read()
-                while True:
-                    try:
-                        temp = etree.XML(data, etree.XMLParser(
-                            remove_blank_text=True))
-                        doc = etree.XML(data, etree.XMLParser(
-                            remove_blank_text=True))
-                        new_doc = sort_xml(doc)
-                        if check_xml(new_doc, temp):
-                            linted_log.append(file)
-                            if lint_option != 'check':
-                                write_xml(new_doc, name_of_file)
-                    except etree.XMLSyntaxError as xml_error:
-                        error_log.append(file + ': ' + str(xml_error))
-                    break
+    lint_dict = {}
+    lint_path = ''
+    lint_anchor = ''
+    if to_anchor.endswith("'"):
+        lint_anchor = to_anchor
+    else:
+        lint_anchor = "'}" + to_anchor+"'"
+    if to_lint.endswith(".xml"):
+        lint_dict = lint_xml(to_lint, lint_option, lint_anchor)
+        if "success" in lint_dict:
+            linted_log.append(lint_dict.get("success"))
+        elif "error" in lint_dict:
+            error_log.append(lint_dict.get("error"))
+    else:
+        lint_path = ''
+        if to_lint.endswith("/"):
+            lint_path = to_lint[:-1]
+        else:
+            lint_path = to_lint
+        for subdir, dirs, files in os.walk(lint_path):
+            for file in files:
+                name_of_file = subdir + os.sep + file
+                if name_of_file.endswith(".xml"):
+                    lint_dict = lint_xml(
+                        name_of_file, lint_option, lint_anchor)
+                    if "success" in lint_dict:
+                        linted_log.append(lint_dict.get("success"))
+                    elif "error" in lint_dict:
+                        error_log.append(name_of_file + ': ' +
+                                         lint_dict.get("error"))
     print_log(linted_log, error_log, lint_option)
 
 
-def lint_file(name_of_file, lint_option):
+def lint_xml(lint_target, lint_option, lint_anchor):
     """
-    Function to lint xml files and output errors/success log
+    Function to lint xmls found in path and output log of linted files
+    and any XMLSyntaxErrors found
     Args:
-        name_of_file (string) : the '.xml' file to lint
+        lint_target (string) : the file or directory to lint
         lint_option (string): parameter to specify write or check
+        lint_anchor (string): tag name that should not be sorted
+    Returns:
+        lint_result (dict): Key indicates a lint was performed/required
+        or that an XMLSyntaxError was thrown
     """
-    linted_log = []
-    error_log = []
-    data = open(name_of_file, 'rb').read()
+    anchor_tag = ''
+    lint_result = {}
+    data = open(lint_target, 'rb').read()
     while True:
         try:
             temp = etree.XML(data, etree.XMLParser(remove_blank_text=True))
             doc = etree.XML(data, etree.XMLParser(remove_blank_text=True))
-            new_doc = sort_xml(doc)
+            if lint_anchor:
+                anchor_tag = lint_anchor
+            else:
+                anchor_tag = DEFAULT_ANCHOR
+            new_doc = sort_xml(doc, anchor_tag)
             if check_xml(new_doc, temp):
-                linted_log.append(name_of_file)
-                if lint_option != 'check':
-                    write_xml(new_doc, name_of_file)
+                lint_result["success"] = lint_target
+                if lint_option == 'write':
+                    write_xml(new_doc, lint_target)
         except etree.XMLSyntaxError as xml_error:
-            error_log.append(name_of_file + ': ' + str(xml_error))
+            lint_result["error"] = str(xml_error)
         break
-    print_log(linted_log, error_log, lint_option)
+    return lint_result
 
 
 if __name__ == "__main__":
     DEFAULT_PATH = os.getcwd()
-    LINT_OPTION = ''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-w', '--write', dest='write',
-                        type=str, help='Specify a file or directory path to perform a lint write')
-    parser.add_argument('-c', '--check', dest='check', type=str,
+    LINT_TYPE = ''
+    LINT_ANCHOR = ''
+    parser = argparse.ArgumentParser(prog='XML Linter')
+    parser.add_argument('-a', '--anchor', type=str,
+                        help='Specify a tag name to not perform sorting on', default=DEFAULT_ANCHOR)
+    parser.add_argument('-c', '--check', type=str, nargs='?', const=DEFAULT_PATH,
                         help='Specify a file or directory path to perform a lint check')
+    parser.add_argument('-w', '--write', dest='write', type=str, nargs='?', const=DEFAULT_PATH,
+                        help='Specify a file or directory path to perform a lint write')
     options = parser.parse_args()
-    if options.check:
-        LINT_OPTION = 'check'
-        if options.check.endswith(".xml"):
-            lint_file(options.check, LINT_OPTION)
-        else:
-            lint_path(options.check, LINT_OPTION)
-    elif options.write:
-        LINT_OPTION = 'write'
-        if options.write.endswith(".xml"):
-            lint_file(options.write, LINT_OPTION)
-        else:
-            lint_path(options.write, LINT_OPTION)
+    print(options)
+    if options.write is None and options.check is not None:
+        LINT_TYPE = 'check'
+        parse_xml(options.check, LINT_TYPE, options.anchor)
     else:
-        LINT_OPTION = 'write'
-        lint_path(DEFAULT_PATH, LINT_OPTION)
+        LINT_TYPE = 'write'
+        parse_xml(options.write, LINT_TYPE, options.anchor)
