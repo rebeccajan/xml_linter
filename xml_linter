@@ -26,15 +26,12 @@ def sort_xml(xml_doc, anchor_tag):
     name_space = xml_doc.nsmap
     # split out anchor tags so position is retained
     for parent in xml_doc.xpath('//*[./*]'):
-        to_sort = (e for e in parent if e.tag !=
-                   '{'+name_space[None]+anchor_tag)
-        non_sort = (e for e in parent if e.tag ==
-                    '{'+name_space[None]+anchor_tag)
         while True:
             try:
                 # sort rest of doc
-                parent[:] = list(non_sort) + \
-                    sorted(to_sort, key=lambda e: e.tag)
+                parent[:] = sorted(
+                    parent, key=lambda x: x.tag
+                    if x.tag != '{'+name_space[None]+anchor_tag else '\t')
             # handle known type error
             except TypeError as type_error:
                 if str(type_error) == known_error:
@@ -77,11 +74,14 @@ def print_log(lint_log, error_log, lint_option):
             error_log)
     if exception_log:
         if lint_option == 'write':
-            print(exception_log)
+            if not error_log:
+                print(exception_log)
+            else:
+                raise Exception(exception_log)
         else:
             raise Exception(exception_log)
     else:
-        print('No linting errors found.')
+        print('No linting errors found')
 
 
 def write_xml(linted_doc, file_name):
