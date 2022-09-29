@@ -14,11 +14,12 @@ For Mac: ```pip3 install -r requirements.txt```
 
 | Flag | Name  | Description |
 | ---- | ----- | ----------- |
-| -a   | anchor| Expects the tag value you wish to retain position <br/> eg. `<fullName>` would be executed as ```python xml_linter -a fullName``` |
+| -a   | anchor| Expects the tag value you wish to anchor at the top of its subset <br/> eg. `<fullName>` would be executed as ```python xml_linter -a fullName``` |
 | -c   | check | Expects a file or directory path to perform a check for sorting and outputs any unsorted documents and/or XML syntax errors to terminal |
 | -w   | write | Expects a file or directory path to format and outputs any linted documents and/or XML syntax errors to terminal |
 | -h   | help  | Display information about the optional arguments |
 
-
-
+### Known Limitations
+- Escaped special characters are unescaped when a lint write is performed eg."&apos;" will become "'"
+- XML files containing comments i.e. "<!--"  will have these removed if sorting is required on write
 
