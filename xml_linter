@@ -20,23 +20,16 @@ def sort_xml(xml_doc, anchor_tag):
     Returns:
         xml_doc (elementTree): the linted version of the file
     """
-    # handle known type error for .xml's containing '<!--'
-    known_error = "'<' not supported between instances of 'cython_function_or_method' and 'str'"
     # get namespace from doc
     name_space = xml_doc.nsmap
     # split out anchor tags so position is retained
     for parent in xml_doc.xpath('//*[./*]'):
-        while True:
-            try:
-                # sort rest of doc
-                parent[:] = sorted(
-                    parent, key=lambda x: x.tag
-                    if x.tag != '{'+name_space[None]+anchor_tag else '\t')
-            # handle known type error
-            except TypeError as type_error:
-                if str(type_error) == known_error:
-                    break
-            break
+        to_sort = (e for e in parent if e.tag !=
+                   '{'+name_space[None]+anchor_tag)
+        non_sort = (e for e in parent if e.tag ==
+                    '{'+name_space[None]+anchor_tag)
+        # sort rest of doc
+        parent[:] = list(non_sort) + sorted(to_sort, key=lambda e: e.tag)
     return etree.ElementTree(xml_doc)
 
 
@@ -157,8 +150,8 @@ def lint_xml(lint_target, lint_option, lint_anchor):
     data = open(lint_target, 'rb').read()
     while True:
         try:
-            temp = etree.XML(data, etree.XMLParser(remove_blank_text=True))
-            doc = etree.XML(data, etree.XMLParser(remove_blank_text=True))
+            temp = etree.XML(data, etree.XMLParser(remove_blank_text=True, remove_comments=True))
+            doc = etree.XML(data, etree.XMLParser(remove_blank_text=True, remove_comments=True))
             if lint_anchor:
                 anchor_tag = lint_anchor
             else:
